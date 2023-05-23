@@ -1,0 +1,229 @@
+---
+title: "Assignment 3"
+author: "Satyaki Basu Sarbadhikary &Anuroop Roy"
+date: "2023-04-27"
+output:
+  pdf_document: default
+  html_document: default
+---
+Q.5)
+```{r}
+#install.packages('dplyr')
+library("dplyr")
+library(MASS)
+head(cats)
+```
+
+
+```{r}
+#extracting heart weight(Hwt)and Body Weight(Bwt)of Female cats
+cats=subset(cats,Sex=='F')
+head(cats)
+jackStat=array(0)
+#renaming heart wt and body wt of fwmale cats as h and b
+h=cats$Hwt
+b=cats$Bwt
+```
+```{r}
+calculateStatistic <- function(x,y) {
+cor(x,y)
+}
+x=h
+y=b
+
+stat <- calculateStatistic(x,y)
+for (i in 1:length(x)) {
+  jack_heart <- x[-i]
+  jack_body<-y[-i]
+  jackStat[i] <- calculateStatistic(jack_heart,jack_body)
+  
+  
+}
+#jacknife estimate of the correlation coefficient between body weight and heart weight 
+estimate <- mean(jackStat)
+paste("a.)jacknife estimate of the correlation coefficient between body weight 
+#and heart weight= ")
+round(estimate,2)
+n <- length(x)
+#jacknife estimate of Standard error of the correlation coefficient 
+SE <- sd(jackStat)*sqrt((n-1)/n)
+paste("b.)jacknife estimate of Standard error of the correlation coefficient=",round(SE,2))
+
+
+#bias corrected jacknife etrimate 
+bias_jacknife=(n-1)*(estimate-stat)
+bias_corrected__jacknife=stat-bias_jacknife
+paste("c) bias corrected jacknife estimate=",round(bias_corrected__jacknife,2))
+
+
+
+
+
+
+
+
+
+```
+Q.7)
+ Call the stackloss dataset in R. It gives the operational data of a plant for the
+oxidation of ammonia to nitric acid. Information on four variables are given.
+Consider the stack.loss as the response variable.
+
+
+(a) Draw an 80% training data randomly from the dataset. Fit a linear regres-
+sion of the response on the predictors. Obtain the predicted values of the 
+response using the fitted model on the complementary test set and obtain
+the test MSE.
+```{r}
+rm(list=ls())
+set.seed(seed=123)
+stackloss=na.omit(stackloss)
+head(stackloss)
+
+
+```
+```{r}
+#drawing 80% training data by random sampling with replacement
+set.seed(seed=123)
+sample=sample(c(TRUE,FALSE),nrow(stackloss),replace=T,prob=c(80,20))
+train=stackloss[sample,]
+nrow(train)
+test=stackloss[!sample,]
+#linear regression of rsponse on predictors
+model=lm(stack.loss~Air.Flow+Water.Temp+Acid.Conc.,data=train)
+
+test
+```
+```{r}
+
+set.seed(seed=123)
+prediction=predict(model,newdata=test)
+#predicted value of response from test data using model of training data
+paste("predicted values of response=")
+prediction
+#test mse
+paste("test mse=")
+
+round(mean((test$stack.loss-prediction)^2),2)
+```
+
+(b) Repeat the above step 50 times and report the average test MSE.
+```{r}
+set.seed(seed=123)
+test_mse=c()
+
+for(i in 1:50){
+sample=sample(c(TRUE,FALSE),nrow(stackloss),replace=T,prob=c(80,20))
+train=stackloss[sample,]
+test=stackloss[!sample,]
+#linear regression of rsponse on predictors
+model=lm(stack.loss~Air.Flow+Water.Temp+Acid.Conc.,data=train)
+prediction=predict(model,newdata=test)
+#predicted value of response from test data using model of training data
+
+#test mse
+#test_mse[i]=(sum(test$stack.loss-prediction)^2)/nrow(test)
+ test_mse[i] =mean((test$stack.loss-prediction)^2)
+}
+"#Average test mse validation set approach"
+round(mean(test_mse),2)
+```
+(c) Apply the Leave One Out Cross Validation method to determine the good-
+ness of the linear regression of the response on the predictors. Report the
+average test MSE.
+```{r}
+set.seed(seed=123)
+n=21
+n=dim(stackloss[1])[1]
+mse=c()
+  for(i in 1:n){
+    model1=lm(stack.loss~Air.Flow+Water.Temp+Acid.Conc.,data=stackloss[-i,])
+    mse[i]=(stackloss[i,4]-predict(model1,newdata=stackloss[i,]))^2
+
+  }
+#average test mse for leave one out approach
+round(mean(mse),2)
+
+```
+(d) Randomly divide the dataset of 21 points into k folds. At the i
+th stage,consider the data after leaving out the i-th fold as the test set. Fit alinear
+regression model on the training set and validate it on the test set and
+obtain the test MSE.
+(e) Choose k = 5, 7, 10 in the preceeding step and in each case, report the
+average test MSE.
+```{r}
+set.seed(seed=123)
+
+
+k=5
+n=nrow(stackloss)
+k1=floor(n/k)
+mse=c()
+predicted=c()
+samp=sample(1:n,n,replace=F)
+
+for(i in 1:k){
+  id=samp[(((i-1)*k1)+1):(k1*i)]
+  test=stackloss[id,]
+  train=stackloss[-id,]
+  model=lm(stack.loss~Air.Flow+Water.Temp+Acid.Conc.,data=train)
+  predicted=predict(model,newdata=test)
+  mse[i]=mean((test$stack.loss-predicted)^2)
+}
+#average test mse for 5 folds=
+round(mean(mse),2)
+
+
+
+
+
+set.seed(seed=123)
+k7=7
+n=nrow(stackloss)
+k2=floor(n/k7)
+mse7=c()
+predicted=c()
+samp=sample(1:n,n,replace=F)
+for(i in 1:k7){
+  id=samp[(((i-1)*k2)+1):(k2*i)]
+  test=stackloss[id,]
+  train=stackloss[-id,]
+  model=lm(stack.loss~Air.Flow+Water.Temp+Acid.Conc.,data=train)
+  predicted=predict(model,newdata=test)
+  mse7[i]=mean((test$stack.loss-predicted)^2)
+}
+#average test mse for 7 folds=
+round(mean(mse7),2)
+
+
+set.seed(seed=123)
+k10=10
+n=nrow(stackloss)
+k3=floor(n/k10)
+mse10=c()
+predicted=c()
+samp=sample(1:n,n,replace=F)
+for(i in 1:k10){
+  id=samp[(((i-1)*k3)+1):(k3*i)]
+  test=stackloss[id,]
+  train=stackloss[-id,]
+  model=lm(stack.loss~Air.Flow+Water.Temp+Acid.Conc.,data=train)
+  predicted=predict(model,newdata=test)
+  mse10[i]=mean((test$stack.loss-predicted)^2)
+}
+#average test mse for 10 folds=
+round(mean(mse10),2)
+
+
+  
+
+
+
+```
+f)Comment on the three methods of cross validation. For the k-fold cross
+validation, which value of k yields the least average test MSE?
+
+from the three methods of cross validation,the k fold cross validation approach yields the minimum average test mse for k=7(13.46) while for k=5 we got 14.74 as average test mse and for k=7 we got 17.97 as average test mse.
+now the validation set approach yielded average test mse (15.37).Leave one out approach 
+ yielded 13.9 as average test mse .
+

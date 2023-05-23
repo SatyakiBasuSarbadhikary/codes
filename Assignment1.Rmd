@@ -1,0 +1,111 @@
+---
+title: "Assignment1"
+author: "Satyaki Basu and Anuroop Roy"
+date: "2023-05-02"
+output:
+  pdf_document: default
+  html_document: default
+---
+Q.5)a
+```{r }
+n=10
+x=round(runif(n,10,60))
+x
+```
+b)Choosing β = 2 and drawing realizations of εis, i = 1(1)n from N(0,σ2=100), obtain Y1,...,Yn.
+```{r}
+eps=rnorm(10,0,10)
+Y=2*x+eps
+Y
+```
+```{r}
+beta_hat_mle=sum(Y*x)/sum(x^2)
+sigma_hat_mle=(1/n)*sum((Y-beta_hat_mle*x)^2)
+round(beta_hat_mle,2)
+round(sigma_hat_mle,2)
+```
+Mle of β=2.1 and Mle of σ2=105.79
+
+d.)Repeat steps (a) − (c) for R = 500 times. Store the R estimates of β and σ^2.
+Obtain the averages of the estimates in each case. Are they close to
+their respective real values?
+```{r}
+n=10
+beta_hat=sigma_hat=array(0)
+for(i in 1:500){
+x=runif(n,10,60) 
+eps=rnorm(10,0,10)
+Y=2*x+eps
+beta_hat_mle=sum(Y*x)/sum(x^2)
+sigma_hat_mle=(1/n)*sum((Y-beta_hat_mle*x)^2)
+beta_hat[i]=beta_hat_mle
+sigma_hat[i]=sigma_hat_mle
+}
+round(mean(beta_hat),2)
+round(mean(sigma_hat),2)
+
+```
+Mle of β=1.99 and Mle of σ2=89.16 after repeating steps (a)-(c) 500 times.
+Yes the MLE s are close to their respective values
+```{r}
+beta=c(5,10,20,50)
+beta_hat_MLE=sigmaSquare_hat_MLE=array(0)
+for(j in 1:4){
+n=10
+beta_hat=sigma_hat=array(0)
+for(i in 1:500){
+x=runif(n,10,60) 
+eps=rnorm(10,0,10)
+Y=beta[j]*x+eps
+beta_hat_mle=sum(Y*x)/sum(x^2)
+sigma_hat_mle=(1/n)*sum((Y-beta_hat_mle*x)^2)
+beta_hat[i]=beta_hat_mle
+sigma_hat[i]=sigma_hat_mle
+}
+beta_hat_MLE[j]=mean(beta_hat)
+sigmaSquare_hat_MLE[j]=mean(sigma_hat)
+}
+true_beta=c(5,10,20,50)
+d=data.frame(true_beta,beta_hat_MLE,sigmaSquare_hat_MLE)
+
+d
+
+
+```
+The datafarme above gives us the MLEs of β for the values 5,10,20,50 (shown along the rows of data frame) and the estimates of σ^2.The estiamtes of  are close to their true original values.Thus the MLE can be considred as unbiased for β
+
+
+
+(f) Repeat step (a) − (c) for R = 500 times choosing n = 20, 40, 75, 100, 200.
+Store the R estimates of β and σ^2.Obtain the averages of the estimates
+in each case. are the mles consistent for the respective parameters?
+
+```{r}
+n=c(20,40,75,100,200)
+beta_hat_MLE=sigmaSquare_hat_MLE=variance_beta_hat=variance_Sigma_square_hat=array(0)
+for(j in 1:5){
+
+beta_hat=sigma_hat=array(0)
+for(i in 1:500){
+x=runif(n[j],10,60) 
+eps=rnorm(n[j],0,10)
+Y=2*x+eps
+beta_hat_mle=sum(Y*x)/sum(x^2)
+sigma_hat_mle=(1/n[j])*sum((Y-beta_hat_mle*x)^2)
+beta_hat[i]=beta_hat_mle
+sigma_hat[i]=sigma_hat_mle
+}
+beta_hat_MLE[j]=mean(beta_hat)
+sigmaSquare_hat_MLE[j]=mean(sigma_hat)
+variance_beta_hat[j]=((n[j]-1)/n[j])*var(beta_hat)
+variance_Sigma_square_hat[j]=var(sigma_hat)
+}
+n=c(20,40,75,100,200)
+true_beta=c(2,2,2,2,2)
+true_sigmaSquare=c(100,100,100,100,100)
+d=data.frame(n,true_beta,beta_hat_MLE,variance_beta_hat,true_sigmaSquare,sigmaSquare_hat_MLE,variance_Sigma_square_hat)
+
+d
+```
+As sample size tends to infinity,MLE Of β tends to it's true value 2 and variance tends to 0.In case of σ^2.the mle tends to it's true value=100 and variance also decreases significantly but tends to 0.So MLE Of β is a consistent estimator for β but Mle of  σ^2 is not consistent .
+

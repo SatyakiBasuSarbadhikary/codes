@@ -1,0 +1,154 @@
+---
+title: "otter"
+author: "SBS"
+date: "2023-03-28"
+output:
+  html_document: default
+  pdf_document: default
+---
+```{r}
+
+Y=na.omit(otter[,c(2:7)])
+Y
+X=as.matrix(Y)
+X
+m=data.frame(otter[,1])
+m
+otter
+stdmat=data.Normalization(X,type="n1")
+stdmat
+cov(stdmat)
+s=svd(stdmat)
+s
+u=s$v
+z=stdmat%*%u[,c(1,2)]
+z
+#install.packages('ggplot2')
+#library("ggplot2")
+ggplot(data=NULL,aes(x=z[,1],y=z[,2]))+geom_point(col="red")+
+  geom_text(mapping=aes(label=m$species,vjust=0,hjust=0))
+
+v=s$u
+w=t(stdmat)%*%v[,c(1,2)]
+w
+ggplot(data=NULL,aes(x=w[,1],y=w[,2]))+geom_point(col="red")+
+  geom_text(mapping=aes(label=colnames(otter[,-1]),vjust=0,hjust=0))
+
+ggpairs(otter,title="plot",ggplot2::aes(colour=species))
+```
+Linear Discriminant Analysis is focused on maximizing the separability among known categories. The problem is when 2 features are not sufficient to capture the most of variation. In PCA, we solve this problem reducing the dimensionality by focusing on the feature with the most variation. LDA is like PCA, but is focused to maximize the separability between the two groups. PCA is unsupervised, but LDA is supervised.
+
+```{r}
+ott=data.frame(na.omit(otter))
+ott
+X=as.matrix(ott[,-1])
+ot=scale(X)
+ott[,"species"]=as.data.frame(cbind(ott[,1],ot))
+
+training_sample <- sample(c(TRUE, FALSE), nrow(ott), replace = T, prob = c(0.7,0.3))
+train <- ott[training_sample, ]
+test <- ott[!training_sample, ]
+lda.otter <- lda(species ~ ., train)
+lda.otter #show results
+
+
+```
+we have scaled the data matrix so that there is no significant difference in the variances of the variables being mesasured and bring them down to the same scale .
+
+we see from prior probs.that 17.19% otters from traing set belongs to species A.cinerera,44.56% otters fall into E.Lutris species 28.26%IN l.CANEDENSIS and resr in braisiliensis species
+
+From the resul above we have the Coefficients of linear discriminants for each of the six variables.
+The first discriminant function LD1 is a linear combination of the six variables: .
+
+
+Note that Discriminant functions are scaled. We have aslo the Proportion of trace, the percentage separations archived by the first discriminant function LD1 is 63%.and that by LDS2 is 33.75%.Or 63.17% of training observations ca
+```{r}
+plot(lda.otter, col = as.integer(train$species))
+```
+
+```{r}
+plot(lda.otter, dimen = 1, type = "b")
+```
+```{r}
+#install.packages('klaR')
+library(klaR)
+partimat(factor(species) ~.,train,method="lda")
+```
+From the Partition Plot above, we can see classification for eachof observation in the training dataset based on the Linear Discriminant Analysis Model, and for every combination of two variables. 
+
+```{r}
+p <- predict(lda.otter, train)
+
+```
+Now we can create a Stacked Histogram of Discriminant Function values.
+```{r}
+library(MASS)
+#par(mfrow=c(3,1))
+p <- predict(lda.otter, train)
+ldahist(data = p$x[,1], g = train$species) 
+```
+
+From the graph above, we have histogram from LD1, we can see that the separation between Lutris #and the other two Species of ooter is quite large with no overlap. On the contrary, there is a #certain amount of overlapping between Cinera and Canadensis. We already said that the percentage #of separation archived by LD1 is60.77%, that is we he can see a very clear separation from the #histogram above. Now, we can try to do the same for LD2.
+
+
+```{r}
+p <- predict(lda.otter,train)
+ldahist(data = p$x[,2], g = train$species)
+
+```
+As we can see from the histogram here above LD2 we have a lot of overlap, which is not great. 
+
+```{r}
+p=predict(lda.otter,test)$class
+
+tab1 <- table(Predicted = p, Actual = test$species)
+tab1
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

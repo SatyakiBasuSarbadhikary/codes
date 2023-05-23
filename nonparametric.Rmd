@@ -1,0 +1,589 @@
+---
+title: "nom paramteric"
+author: "sbs_roll432"
+date: "2023-02-21"
+output:
+  pdf_document: default
+  html_document: default
+  word_document: default
+---
+
+Date - 16.02.2023
+
+### Problem - 1
+**Suppose there are monthly sales of shoes for the year 2021 collected -**  
+**43,46,57,45,55,26,234,200,212,253,260,251**  
+**The manufacturer claims that on an average, the monthly sale is generallay 140. Is the data is sufficient to claim that the average monthly sale of the last year exceed 140.**
+
+H0: $\mu = 140$ v/s H1: $\mu>140$
+
+We will try out the **t-test** first.
+
+```{r}
+library(DescTools)
+library(tidyverse)
+```
+
+```{r}
+x = c(43,46,57,45,55,26,234,200,212,253,260,251)
+t_test = t.test(x, mu = 140, alternative =  "greater"); t_test
+```
+here the p-value is given by = `r (t_test)$p.value` > $\alpha$ = 0.05. In the light of the given sample we fail to reject the Null Hypothesis.
+
+Now we are going to check on the normality of the distribution.
+
+Lets first draw the histogram of the dataset -
+
+```{r}
+hist(x, freq = FALSE)
+curve(dnorm(x, mean(x), sd(x)), add=TRUE, lwd = 2, col ='red')
+```
+
+From the histogram its clear that the distribution is not nearly from a normal distribution.
+
+Lets try the quantile plot -
+
+```{r}
+qqnorm(x, pch=20, col ='red')
+```
+
+The qqplot also supports that its not from a normal distribution,
+
+Lets test the Normality by the Shapiro-Wilkies Normality Test -
+
+```{r}
+shapiro_wilk_test = shapiro.test(x); shapiro_wilk_test
+```
+The pvalue of the Shapiro-Wilk Test for normality we get the p-value = `r shapiro_wilk_test$p.value` < $\alpha$ = 0.05, so based on the sample, we reject the null hypothesis of that the samplw is coming from a normal distribution.
+
+**Comment:**  
+Here we cannot proceed with the Parametric Inference because the basic assumptions of the parametric testing problems (ie, Normality of the Population distribution, the sample size is not large) is not satisfying here. Here we should move towards the non-parametric approach to test the hypothesis.  
+
+Since the parametric approach is not applicable here, we are going to use the Sign Test to test for the location.
+
+H0: $\xi_{0.5} = 140$  v/s H1: $\xi_{0.5} > 140$
+
+```{r}
+signTest = SignTest(x, mu = 140, alternative = "greater"); signTest
+```
+
+Here, p-value = `r signTest$p.value` > $\alpha$ = 0.05. Hence, in the light of the given data, we fails to reject the null Hypothesis.
+
+### Problem - 2
+**Suppose we want to test whether the median efficiency of the electric bulb exceed 99cm with $\alpha$ = 0.05 on basis of the following 15 measurements - **  
+**9.29, 10.15, 8.69, 11.25, 6.58, 9.79, 12.05, 12.38, 7.88, 11.56, 10.25, 8.93, 9.02, 10.87, 10.0**  
+**Carry out Both the parametric and non-parametric tests on the data, and draw the power curves**
+
+lets' first check the normality of the dataset -
+
+**Histogram**  
+
+```{r}
+x = c(9.29, 10.15, 8.69, 11.25, 6.58,
+      9.79, 12.05, 12.38, 7.88, 11.56,
+      10.25, 8.93, 9.02, 10.87, 10.0)
+hist(x, freq = FALSE)
+curve(dnorm(x, mean(x), sd(x)), add = TRUE, lwd = 2, col = "red")
+```
+
+**QQ-plot**
+
+```{r}
+qqnorm(x, col = 'red', pch = 20)
+```
+
+**Shapiro-Wilks Test**
+
+```{r}
+shapiro_wilk_test = shapiro.test(x); shapiro_wilk_test
+```
+
+Here the p-value = `r shapiro_wilk_test$p.value` > $\alpha$ = 0.05. from the sample we fails to reject the Null hypothesis.
+
+So, from both Histogram, QQ plot and Shapiro-Wilk's Test we identify the sample to be coming from a normal population.  
+
+**Power Curves**  
+
+```{r}
+f = function(x){
+      return(sum(ifelse(x>9.9, 1, 0)))
+    }
+mu = seq(9.9, 12, 0.01)
+R = 1000
+n = 15
+z_test_power = array(0)
+sign_test_power = array(0)
+t_test_power = array(0)
+for(i in 1:length(mu)){
+    X = matrix(rnorm(n*R, mu[i], 1), n, R)
+    mean_x = apply(X, 2, mean)
+    sd_x = apply(X, 2, sd)
+   
+    # z - test
+    z = sqrt(n)*(mean_x - 9.9)/1
+    z_test_power[i] = mean(ifelse(z>qnorm(0.95), 1, 0))
+   
+    # t - test
+    t = sqrt(n)*(mean_x - 9.9)/sd_x
+    t_test_power[i] = mean(ifelse(t>qt(0.95, n-1), 1, 0))
+   
+    # sign - test
+    S = apply(X, 2, f)
+    Z = (S - n*0.5)/sqrt(n*0.5*0.5)
+    sign_test_power[i] = mean(ifelse(abs(Z) > qnorm(0.95), 1, 0))
+}
+
+data.frame(mu, z_test_power, t_test_power, sign_test_power) %>%
+    gather(key = 'Legend', value = 'Power', -mu) %>%
+    ggplot(aes(x = mu)) +    
+    geom_line(aes(y = Power, color = Legend), linewidth = 1.01) +    
+    labs(x = "mu", y = "Power", title = "Power Curves for 3 types of Test")
+```
+
+```{r}
+f = function(x){
+      return(sum(ifelse(x>9.9, 1, 0)))
+    }
+lambda = seq(9.9, 12, 0.01)
+R = 1000
+n = 15
+z_test_power = array(0)
+sign_test_power = array(0)
+t_test_power = array(0)
+for(i in 1:length(mu)){
+    X = matrix(rnorm(n*R,lambda), n, R)
+    mean_x = apply(X, 2, mean)
+    sd_x = apply(X, 2, sd)
+   
+    # z - test
+    z = sqrt(n)*(mean_x - 9.9)/1
+    z_test_power[i] = mean(ifelse(z>qnorm(0.95), 1, 0))
+   
+    # t - test
+    t = sqrt(n)*(mean_x - 9.9)/sd_x
+    t_test_power[i] = mean(ifelse(t>qt(0.95, n-1), 1, 0))
+   
+    # sign - test
+    S = apply(X, 2, f)
+    Z = (S - n*0.5)/sqrt(n*0.5*0.5)
+    sign_test_power[i] = mean(ifelse(abs(Z) > qnorm(0.95), 1, 0))
+}
+
+data.frame(mu, z_test_power, t_test_power, sign_test_power) %>%
+    gather(key = 'Legend', value = 'Power', -mu) %>%
+    ggplot(aes(x = mu)) +    
+    geom_line(aes(y = Power, color = Legend), linewidth = 1.01) +    
+    labs(x = "mu", y = "Power", title = "Power Curves for 3 types of Test")
+
+```
+
+
+```{r}
+a=c(7,8,9,12,14,16)
+b=c(7,8,18,28,44,66)
+
+SignTest(a,mu=10,alternative="greater",conf.level=0.9)
+
+SignTest(b,mu=10,alternative="greater",conf.level=0.9)
+wilcox.test(a,mu=10,alternative="greater",conf.level=0.9)
+wilcox.test(b,mu=10,alternative="greater",conf.level=0.9)
+```
+```{r}
+set.seed(13)
+x=c(9.29,10.15,8.69,11.25,6.58,9.76,12.05,12.38,7.88,11.56,10.25,8.93,9.02,10.87,10.0)
+S=function(x){
+  return(sum(ifelse(x - 9.9 > 0 , 1, 0)))
+}
+W=function(x){
+  return(sum(ifelse(x - 9.9 > 0 , 1, 0))*rank(abs(x - 9.9)))
+}
+mu = seq(9.9, 12, 0.01)
+R = 1000
+n = length(x)
+t_test_power = array(0)
+z_test_power = array(0)
+sign_test_power = array(0)
+wilcoxon_test_power = array(0)
+for(i in 1:length(mu)){
+  samp = matrix(rnorm(n*R,mu[i],1),nrow = n)
+  samp_mean = apply(samp,2,mean)
+  samp_sd = apply(samp, 2, sd)
+# z - test
+  z = sqrt(n)*(samp_mean - 9.9)/1
+  z_test_power[i] = mean(ifelse(z>qnorm(0.95), 1, 0))
+# t - test
+  t = sqrt(n)*(samp_mean - 9.9)/samp_sd
+  t_test_power[i] = mean(ifelse(t>qt(0.95, n-1), 1, 0))
+# sign - test
+  S_stat = apply(samp,2,S)
+  sign = (S_stat - n*0.5)/sqrt(n*0.5*0.5)
+  sign_test_power[i] = mean(ifelse(abs(sign) > qnorm(0.95), 1, 0)) 
+# Wilcoxon Sign Rank Test
+  W_stat = apply(samp,2,W)
+  Wilcozon = (W_stat - n*(n+1)/4)/sqrt(n*(n+1)*(2*n+1)/24)
+  wilcoxon_test_power[i] = mean(ifelse(Wilcozon > qnorm(0.95), 1, 0)) 
+}
+p1=data.frame(mu, z_test_power, t_test_power, sign_test_power,wilcoxon_test_power) %>%
+  gather(key = 'Legend', value = 'Power', -mu) %>%
+  ggplot(aes(x = mu)) +
+  geom_line(aes(y = Power, color = Legend), size = 1.01) +
+  labs(x = "mu", y = "Power",title = "Power Curves for Normal Distribution");p1
+
+```
+```{r}
+set.seed(13)
+x=c(9.29,10.15,8.69,11.25,6.58,9.76,12.05,12.38,7.88,11.56,10.25,8.93,9.02,10.87,10.0)
+S=function(x){
+  return(sum(ifelse(x - 9.9 > 0 , 1, 0)))
+}
+W=function(x){
+  return(sum(ifelse(x - 9.9 > 0 , 1, 0))*rank(abs(x - 9.9)))
+}
+mu = seq(9.9, 12, 0.01)
+R = 1000
+n = length(x)
+t_test_power = array(0)
+z_test_power = array(0)
+sign_test_power = array(0)
+wilcoxon_test_power = array(0)
+for(i in 1:length(mu)){
+  samp = matrix(rcauchy(n*R,mu[i],1),nrow = n)
+  samp_mean = apply(samp,2,mean)
+  samp_sd = apply(samp, 2, sd)
+# z - test
+  #z = sqrt(n)*(samp_mean - 9.9)/1
+  #z_test_power[i] = mean(ifelse(z>qnorm(0.95), 1, 0))
+# t - test
+  t = sqrt(n)*(samp_mean - 9.9)/samp_sd
+  t_test_power[i] = mean(ifelse(t>1.83, 1, 0))
+# sign - test
+  S_stat = apply(samp,2,S)
+  sign = (S_stat - n*0.5)/sqrt(n*0.5*0.5)
+  sign_test_power[i] = mean(ifelse(abs(sign) >1.644, 1, 0)) 
+# Wilcoxon Sign Rank Test
+  W_stat = apply(samp,2,W)
+  Wilcozon = (W_stat - n*(n+1)/4)/sqrt(n*(n+1)*(2*n+1)/24)
+  wilcoxon_test_power[i] = mean(ifelse(Wilcozon > 1.644, 1, 0)) 
+}
+p1=data.frame(mu,t_test_power, sign_test_power,wilcoxon_test_power) %>%
+  gather(key = 'Legend', value = 'Power', -mu) %>%
+  ggplot(aes(x = mu)) +
+  geom_line(aes(y = Power, color = Legend), size = 1.01) +
+  labs(x = "mu", y = "Power",title = "Power Curves for cochy Distribution");p1
+
+```
+```{r}
+a=c(1,4,8,9,13,14,16)
+b=c(7,8,18,20,28,44,66)
+SignTest(a,mu=10,alternative="greater",conf.level=0.9)
+
+SignTest(b,mu=10,alternative="greater",conf.level=0.9)
+wilcox.test(a,mu=10,alternative="greater",conf.level=0.9)
+wilcox.test(b,mu=10,alternative="greater",conf.level=0.9)
+```
+
+```{r}
+#exact test
+
+set.seed(987654321)
+R=1000
+samp=replicate(R,rnorm(15,0,1))
+S=function(x){
+  return(sum(ifelse(x > 0 , 1, 0)))
+}
+S_stat = apply(samp,2,S)
+freq=table(S_stat)
+cum_freq=cumsum(freq)
+prob=cum_freq/R
+s=1-prob
+data.frame(freq,cum_freq,prob,s)
+```
+```{r}
+library(MASS)
+mu=c(0,0)
+sigma=matrix(c(1,0.5,0.5,1),nrow=2)
+SAMP=mvrnorm(15,mu,sigma)
+ui=SAMP[,1]-SAMP[,2]
+median(ui)
+SignTest(ui, mu=-1, alternative = "greater")
+```
+
+```{r}
+#exact test
+
+set.seed(987654321)
+R=1000
+samp=replicate(R,rnorm(15,0,1))
+S=function(x){
+  return(sum(ifelse(x > 0 , 1, 0)))
+}
+S_stat = apply(samp,2,S)
+freq=table(S_stat)
+cum_freq=cumsum(freq)
+prob=cum_freq/R
+s=1-prob
+data.frame(freq,cum_freq,prob,s)
+```
+
+```{r}
+#normality test
+library("lawstat")
+x1=c(-2,0,-1,-4,-0.75,-1.75,-2.75,0,-1.75,1)
+#checkng if data is symmetric
+symmetry.test(x1)
+#(data is symmetric)
+shapiro_wilk_test = shapiro.test(x1); shapiro_wilk_test
+qqnorm(x1, pch=20, col ='red')
+x2=c(1,0.5,-0.75,-2,-3,-2.5,0,0.25)
+shapiro_wilk_test = shapiro.test(x2); shapiro_wilk_test
+qqnorm(x2, pch=20, col ='red')
+#parametric test
+var.test(x1,x2,alternative="greater")
+t.test(x1,x2,alternative="greater",var.equal=T)
+#cor.test
+#WILCOXON 
+wilcox.test(x1,x2)
+wilcox.test(x1,alternative="greater",exact=FALSE)
+wilcox.test(x2,alternative="greater",exact=FALSE)
+mood.test(x1,x2,alternative="greater")
+
+library(nonpar)
+#two sample median test
+mediantest(x1,x2,exact=FALSE)
+SiegelTukeyTest(x1,x2,alternative="less",exact=FALSE)
+ansari.test(x1,x2,alternative="greater",exact=FALSE)
+```
+```{r}
+#repition of previous chunk with some changes
+#normality test
+library("lawstat")
+x1=c(-2,0,-1,-4,-0.75,-1.75,-2.75,0,-1.75,1)
+symmetry.test(x1)
+shapiro_wilk_test = shapiro.test(x1); shapiro_wilk_test
+qqnorm(x1, pch=20, col ='red')
+x2=c(1,0.5,-0.75,-2,-3,-2.5,0,0.25)
+shapiro_wilk_test = shapiro.test(x2); shapiro_wilk_test
+qqnorm(x2, pch=20, col ='red')
+#parametric test
+var.test(x1,x2,alternative="greater")
+t.test(x1,x2,alternative="greater",var.equal=T)
+#cor.test
+#WILCOXON 
+wilcox.test(x1,x2)
+wilcox.test(x1,alternative="greater",exact=FALSE)
+wilcox.test(x2,alternative="greater",exact=FALSE)
+mood.test(x1,x2,alternative="greater")
+library(nonpar)
+#two sample median test
+mediantest(x1,x2,exact=FALSE)
+fat1=c(1.14,-2.64,-1.96,0.86,-2.35,-2.51,0.55,3.4,0,-4.94)
+fat2=c(-0.56,0.87,-0.75,-0.6,0,-2.54,-3.1,3.48)
+library("DescTools")
+#Wald-Wolfowitz Run Test
+RunsTest(x1,x2,alternative="less",exact=F)
+RunsTest(fat1,fat2,alternative="less",exact=F)
+RunsTest(girth1,girth2,alternative="less",exact=F)
+#kolmogorov-smirnov test
+ks.test(fat1,fat2,alternative="greater")
+#test for scale parameter
+mood.test(x1,x2,alternative="greater")
+#checking difference in scale and locations through histogram
+h1=hist(fat1,freq=F)
+h2=hist(fat2,freq=F)
+plot(h1,col="red")
+plot(h2,col="blue",add=T)
+#checking outlier
+library("tidyverse")
+ggplot(NULL,aes(y=girth1))+geom_boxplot(aes(fill="red"))
+#outliers are affecting 
+```
+
+```{r}
+#Tests for Goodness of Fit
+#generate 1000 random numbers from normal,lognormal,doubleexponential,cauchyandlog normal.Through appropriate tests check if they are coming from normal,log normal,weibull,exponential and cauchy
+#libaray("smoothmest")
+y1=rnorm(1000,0,1)
+y2=rlnorm(1000,0,1)
+y3=rdoublex(1000)
+y4=rcauchy(1000)
+ks.test(y1,"pnorm")
+AndersonDarlingTest(y1,null="pnorm")
+ks.test(y2,"plnorm")
+AndersonDarlingTest(y2,null="plnorm")
+ks.test(y3,"pdoublex")
+AndersonDarlingTest(y3,null="pdoublex")
+ks.test(y4,"pcauchy")
+AndersonDarlingTest(y4,null="pcauchy")
+
+
+ks.test(y1,"pexp")
+AndersonDarlingTest(y1,null="pexp")
+ks.test(y2,"pexp")
+AndersonDarlingTest(y2,null="pexp")
+
+
+ks.test(y3,"pexp")
+AndersonDarlingTest(y3,null="pexp")
+ks.test(y4,"pexp")
+AndersonDarlingTest(y4,null="pexp")
+
+
+ks.test(y1,"plnorm")
+AndersonDarlingTest(y1,null="plnorm")
+ks.test(y3,"plnorm")
+AndersonDarlingTest(y3,null="plnorm")
+ks.test(y4,"plnorm")
+AndersonDarlingTest(y4,null="plnorm")
+
+
+
+ks.test(y1,"pcauchy")
+AndersonDarlingTest(y1,null="pcauchy")
+ks.test(y2,"pcauchy")
+AndersonDarlingTest(y2,null="pcauchy")
+
+ks.test(y3,"pcauchy")
+AndersonDarlingTest(y3,null="pcauchy")
+
+
+ks.test(y1,"pweibull",1,1)
+AndersonDarlingTest(y1,null="pweibull",1,1)
+
+ks.test(y2,"pweibull")
+AndersonDarlingTest(y2,null="pweibull",1,1)
+
+ks.test(y3,"pweibull",1,1)
+AndersonDarlingTest(y3,null="pweibull",1,1)
+
+ks.test(y4,"pweibull",1,1)
+AndersonDarlingTest(y4,null="pweibull",1,1)
+```
+
+girth1=c(-17,2,23,13,2,5,8,3,7,10)
+girth2=c(11,5,1,35,-5,2,3,-7)
+fat1=c(1.14,-2.64,-1.96,0.86,-2.35,-2.51,0.55,3.4,0,-4.94)
+fat2=c(-0.56,0.87,-0.75,-0.6,0,-2.54,-3.1,3.48)
+mass1=c(-2,0,-1,-4,-0.75,-1.75,-2.75,0,-1.75,1)
+mass2=c(1,0.5,-0.75,-2,-3,-2.5,0,0.25)
+#mass and fat
+cor.test(mass1,fat1)
+cor.test(mass1,fat1,method="kendall")
+cor.test(mass1,fat1,alternative="two.sided",method="spearman")
+
+#mass and girth
+cor.test(mass1,girth1)
+cor.test(mass1,girth1,method="kendall")
+cor.test(mass1,girth1,method="spearman")
+
+#girth and fat
+cor.test(girth1,fat1)
+cor.test(girth1,fat1,method="kendall")
+cor.test(girth1,fat1,method="spearman")
+
+
+#control group
+
+
+cor.test(mass2,fat2)
+cor.test(mass2,fat2,method="kendall")
+cor.test(mass2,fat2,alternative="two.sided",method="spearman")
+
+#mass and girth
+cor.test(mass2,girth2)
+cor.test(mass2,girth2,method="kendall")
+cor.test(mass2,girth2,method="spearman")
+
+#girth and fat
+cor.test(girth2,fat2)
+cor.test(girth2,fat2,method="kendall")
+cor.test(girth2,fat2,method="spearman")
+
+
+
+
+```
+```{r}
+#kruscall wallis test
+x1=rnorm(10,2,4)
+x2=rnorm(10,2,9)
+x3=rnorm(10,2,16)
+#x=c(x1,x2,x3)
+kruskal.test(list(x1,x2,x3))
+
+x_1=rnorm(10,0,1)
+x_2=rnorm(10,1,1)
+x_3=rnorm(10,2,1)
+kruskal.test(list(x_1,x_2,x_3))
+
+x__1=rnorm(10,0,1)
+x__2=rnorm(10,1,4)
+x__3=rnorm(10,2,3)
+kruskal.test(list(x_1,x_2,x_3))
+install.packages('rstatix')
+library("rstatix")
+#NON NORMAL KRUSCALL WALLIUS
+#DIFFERENT LOCATION BUT SAME SCALE
+X1=rcauchy(10,0,1)
+X2=rcauchy(15,1,1)
+X3=rcauchy(20,2,1)
+X4=rcauchy(25,3,1)
+kruskal.test(list(X1,X2,X3))
+#do paiwise comparison to see which pairs differ if h0 rejected
+kruskal.test(list(X1,X2))
+
+pairwise.wilcox.test(c(X1,X2,X3,X4),c(rep(1,10),rep(2,15),rep(3,20),rep(4,25)))
+
+#1 and 2,1 and 3,1 and 4,2 and 3,3 and 4 not significantly different
+s#amples 2 and 4 significantly different
+sample=c(X1,X2,X3,X4)
+label=c(rep(1,10),rep(2,15),rep(3,20),rep(4,25))
+summary(aov(sample~label))
+```
+
+```{r}
+cars
+```
+```{r}
+lm(cars$dist~cars$speed)
+#install.packages('tidyverse')
+#library("tidyverse")
+s=summary(lm(cars$dist~cars$speed))
+ggplot(cars,aes(cars$speed,cars$dist))+geom_point()+geom_smooth(method="lm")+xlab("speed")+ylab("distance")
+#
+model=lm(cars$dist~cars$speed)
+plot(model,1)
+#qq plot
+plot(model,2)
+shapiro.test(s$residuals)
+#conclusion -non normal
+#E(e)=0
+plot(resid(model))
+#equally spread about ach side of 0 so E(e)=0
+#high leverage point
+plot(model,5)
+#no outlier
+#
+#Cook's distance
+plot(model,4)
+
+#23th,49th and39th observations are leverage points
+
+#scale locaion plot
+plot(model,3)
+#non const var score test
+library(car)
+ncvTest(model)
+#Breusch Pagan Test
+library(lmtest)
+bptest(model)
+#removing 23 ,35 and 49
+c=cars[-c(23,35,49)]
+model1=lm(c$dist~c$speed)
+library(car)
+ncvTest(model1)
+plot(cars$speed,resid(model))
+#there is pattern in above diagram so x and e is related
+plot(c$speed,resid(model1))
+```
+
+

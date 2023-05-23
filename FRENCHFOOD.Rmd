@@ -1,0 +1,294 @@
+---
+title: "frenchfood"
+author: "satyaki basu sarbadhikary"
+date: "2023-03-27"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+
+```{r}
+#setwd('C:\Users\DS-7\Documents')
+#french
+Y=french
+Y
+glimpse(french)
+m=Y[,1]
+#m
+```
+```{r}
+
+B=data.frame(Y[,c(2:8)])
+X=as.matrix(B)
+var(X)
+```
+```{r}
+col_mean=apply(X,2,mean)
+sd_mat=apply(X,2,sd)
+
+
+```
+```{r}
+mat=matrix(,nrow=12,ncol=7)
+sdmat=matrix(,nrow=12,ncol=7)
+mat[,1]=col_mean[1]
+mat[,2]=col_mean[2]
+mat[,3]=col_mean[3]
+mat[,4]=col_mean[4]
+mat[,5]=col_mean[5]
+mat[,6]=col_mean[6]
+mat[,7]=col_mean[7]
+sdmat[,1]=sd_mat[1]
+sdmat[,2]=sd_mat[2]
+sdmat[,3]=sd_mat[3]
+sdmat[,4]=sd_mat[4]
+sdmat[,5]=sd_mat[5]
+sdmat[,6]=sd_mat[6]
+sdmat[,7]=sd_mat[7]
+Z=(X-mat)/sd_mat
+Z
+
+
+
+
+```
+
+```{r}
+cor(X)
+```
+```{r}
+pairs(X)
+#corrplot(X)
+```
+```{r}
+#install.packages('matlib')
+#library("matlib")
+SVD(Z%*%t(Z))
+```
+```{r}
+#row wise plot
+Y=eigen(t(Z)%*%Z)
+U1=Y$vectors[,1]
+U2=Y$vectors[,2]
+
+#Y$vectors[,1]
+#Y[,1]
+
+Z1=Z%*%U1
+Z2=Z%*%U2
+Z1
+Z2
+```
+```{r}
+d=data.frame(Z1,Z2)
+#install.packages('tidyverse')
+library("tidyverse")
+ggplot(d,aes(x=Z1,y=Z2))+geom_point(aes(col=m))+geom_text(aes(label=m,vjust=0,hjust=0))
+```
+```{r}
+Y1=eigen(Z%*%t(Z))
+V1=Y1$vectors[,1]
+#V1
+V2=Y1$vectors[,2]
+
+#Y$vectors[,1]
+#Y[,1]
+
+Z11=t(Z)%*%V1
+#Z11
+Z21=t(Z)%*%V2
+Z11
+Z21
+```
+```{r}
+d1=data.frame(Z11,Z21)
+#install.packages('tidyverse')
+library("tidyverse")
+m1=c("bread", "vegetables", "fruits", "meat", "poultry", "milk", "wine")
+ggplot(d1,aes(x=Z11,y=Z21))+geom_point(col="red")+geom_text(aes(label=m1,vjust=0,hjust=0))
+```
+
+```{r}
+#install.packages('tidyverse')
+#library("tidyverse")
+
+french=data.frame(french)
+X = french[,-1]
+X %>% 
+  gather(key = "Variable", value = "val") %>%
+  ggplot(aes(fill = Variable, color = Variable))+
+  geom_boxplot(aes(y = val))
+#install.packages('GGally')
+##library("GGally")
+
+```
+```{r}
+X=as.matrix(X)
+S = cov(X)
+eigen_val = eigen(S)$values
+eigen_vec = eigen(S)$vectors
+
+round(eigen_val, 3)
+round(eigen_vec, 3)
+
+inertia = cumsum(eigen_val)*100/sum(eigen_val)
+round(inertia, 3)
+
+rho = matrix(array(0), nrow(S), ncol(S))
+for(i in 1:nrow(S)){
+  for(j in 1:ncol(S)){
+    rho[i,j] = eigen_vec[i,j]*sqrt(eigen_val[j])/sqrt(S[i,i])
+  }
+}
+round(rho[,1:2],3)
+
+f = function(x){
+  return(sum(x^2))
+}
+
+apply(rho[,1:2], 1, f)
+
+library(ggplot2)
+library(gridExtra)
+g1 = data.frame(PC1 = rho[,1], PC2 = rho[,2])%>%
+  ggplot(aes(x = PC1, y = PC2))+
+  geom_point(color = "red")+
+  geom_text(aes(x = PC1, y = PC2), 
+           label = c("X1","X2","X3","X4","X5","X6","X7"), 
+           hjust = 0, vjust = 0)
+
+Y = scale(X)%*%eigen_vec[,1:2]
+Y
+g2 = data.frame(Y1 = Y[,1], Y2 = Y[,2], status = m)%>%
+  ggplot(aes(x = Y1, y = Y2))+
+  geom_point(aes(color = m))
+
+grid.arrange(g1, g2, nrow = 2)
+```
+```{r}
+S = cor(X)
+eigen_val = eigen(S)$values
+eigen_vec = eigen(S)$vectors
+
+round(eigen_val, 3)
+round(eigen_vec, 3)
+
+inertia = cumsum(eigen_val)*100/sum(eigen_val)
+round(inertia,3)
+
+rho = matrix(array(0), nrow(S), ncol(S))
+for(i in 1:nrow(S)){
+  for(j in 1:ncol(S)){
+    rho[i,j] = eigen_vec[i,j]*sqrt(eigen_val[j])/sqrt(S[i,i])
+  }
+}
+round(rho[,1:2],3)
+
+f = function(x){
+  return(sum(x^2))
+}
+
+apply(rho[,1:2], 1, f)
+
+library(ggplot2)
+library(gridExtra)
+g1 = data.frame(PC1 = rho[,1], PC2 = rho[,2])%>%
+  ggplot(aes(x = PC1, y = PC2))+
+  geom_point(color = "red")+
+  geom_text(aes(x = PC1, y = PC2), 
+           label = c("X1","X2","X3","X4","X5","X6","X7"), 
+           hjust = 0, vjust = 0)
+g1
+Y = scale(X)%*%eigen_vec[,1:2]
+g2 = data.frame(Y1 = Y[,1], Y2 = Y[,2], status = m)%>%
+  ggplot(aes(x = Y1, y = Y2))+
+  geom_point(aes(color = m))
+
+grid.arrange(g1, g2, nrow = 2)
+```
+```{r}
+S = cov(Z)
+eigen_val = eigen(S)$values
+eigen_vec = eigen(S)$vectors
+
+round(eigen_val, 3)
+round(eigen_vec, 3)
+
+inertia = cumsum(eigen_val)*100/sum(eigen_val)
+round(inertia, 3)
+
+rho = matrix(array(0), nrow(S), ncol(S))
+for(i in 1:nrow(S)){
+  for(j in 1:ncol(S)){
+    rho[i,j] = eigen_vec[i,j]*sqrt(eigen_val[j])/sqrt(S[i,i])
+  }
+}
+round(rho[,1:2],3)
+
+f = function(x){
+  return(sum(x^2))
+}
+
+apply(rho[,1:2], 1, f)
+
+library(ggplot2)
+library(gridExtra)
+g1 = data.frame(PC1 = rho[,1], PC2 = rho[,2])%>%
+  ggplot(aes(x = PC1, y = PC2))+
+  geom_point(color = "red")+
+  geom_text(aes(x = PC1, y = PC2), 
+           label = c("X1","X2","X3","X4","X5","X6","X7"), 
+           hjust = 0, vjust = 0)
+
+Y = scale(Z)%*%eigen_vec[,1:2]
+Y
+g2 = data.frame(Y1 = Y[,1], Y2 = Y[,2], status = m)%>%
+  ggplot(aes(x = Y1, y = Y2))+
+  geom_point(aes(color = m))
+
+grid.arrange(g1, g2, nrow = 2)
+
+```
+```{r}
+S = cor(Z)
+eigen_val = eigen(S)$values
+eigen_vec = eigen(S)$vectors
+
+round(eigen_val, 3)
+round(eigen_vec, 3)
+
+inertia = cumsum(eigen_val)*100/sum(eigen_val)
+round(inertia,3)
+
+rho = matrix(array(0), nrow(S), ncol(S))
+for(i in 1:nrow(S)){
+  for(j in 1:ncol(S)){
+    rho[i,j] = eigen_vec[i,j]*sqrt(eigen_val[j])/sqrt(S[i,i])
+  }
+}
+round(rho[,1:2],3)
+
+f = function(x){
+  return(sum(x^2))
+}
+
+apply(rho[,1:2], 1, f)
+
+library(ggplot2)
+library(gridExtra)
+g1 = data.frame(PC1 = rho[,1], PC2 = rho[,2])%>%
+  ggplot(aes(x = PC1, y = PC2))+
+  geom_point(color = "red")+
+  geom_text(aes(x = PC1, y = PC2), 
+           label = c("X1","X2","X3","X4","X5","X6","X7"), 
+           hjust = 0, vjust = 0)
+g1
+Y = scale(Z)%*%eigen_vec[,1:2]
+g2 = data.frame(Y1 = Y[,1], Y2 = Y[,2], status = m)%>%
+  ggplot(aes(x = Y1, y = Y2))+
+  geom_point(aes(color = m))
+
+grid.arrange(g1, g2, nrow = 2)
+```
+

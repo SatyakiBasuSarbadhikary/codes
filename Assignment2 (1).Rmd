@@ -1,0 +1,156 @@
+---
+title: "Assignment set 2"
+author: "Satyaki Basu Sarbadhikary and Anuroop Roy"
+date: "2023-04-29"
+output:
+  pdf_document: default
+  html_document: default
+---
+Q.1(a) The likelihood function is  L(($\theta,\nu)$|$x_1,x_2,x_3,...,x_n$)=   $\prod_{i=1}^{n}\frac{\theta\nu^\theta}{x_i^\theta+1}$
+
+```{r}
+rm(list=ls())
+```
+b)
+```{r }
+library("EnvStats")
+library("tidyverse")
+set.seed(seed=1234)
+x=rpareto(10,shape=1,location=5)
+
+likelihood=c()
+V=seq(1,7,0.1)
+l=function(v,x){
+  return(prod(dpareto(x,location=v,shape=1)))
+  }
+ 
+
+for(i in 1:length(V)){
+  likelihood[i]=l(V[i],x)
+}
+
+f=function(params){
+  return(prod(dpareto(x,location=params,shape=1)))
+}
+Ctrl= list(fnscale=-1)
+params=5
+K=optim(fn=f,par=params,control=Ctrl,method="Nelder-Mead")
+
+#mu=mle(f,median(x),,method="L-BFGS-B")
+#MLE
+K$par
+data.frame(V,likelihood)%>%ggplot(aes(x=V,y=likelihood))+
+  labs(title="Plot of Likelihood function")+ geom_line(linewidth=1.5)+geom_line(aes(x=K$par),col="red")+  annotate("text", x=2,y=3e-15, label = paste("MLE = ",K$par))
+    
+```
+```{r}
+#when both theta(shape parameter) an
+
+likelihood=c()
+theta=seq(0.5,3,0.1)
+l=function(v,x){
+  return(prod(dpareto(x,location=5,shape=v)))
+  }
+ 
+
+for(i in 1:length(theta)){
+  likelihood[i]=l(theta[i],x)
+}
+
+f=function(params){
+  return(prod(dpareto(x,shape=params,location=5)))
+}
+Ctrl= list(fnscale=-1)
+params=1
+K=optim(fn=f,par=params,control=Ctrl,method="Nelder-Mead")
+
+#mu=mle(f,median(x),,method="L-BFGS-B")
+#MLE
+K$par
+data.frame(theta,likelihood)%>%ggplot(aes(x=theta,y=likelihood))+
+  labs(title="Plot of Likelihood function")+ geom_line(linewidth=1.5)+geom_line(aes(x=K$par),col="red")+
+  annotate("text", x=2.5,y=3e-15, label = paste("MLE = ",K$par))
+```
+loglikelihood graph when shape parameter is unknown with MLE=1.25
+
+c)
+```{r}
+T1=c()
+T_1=c()
+for(i in 1:1000){
+  x=rpareto(10,shape=1,location=5)
+  T1[i]=log(prod(x)/(min(x)^10))
+  T_1[i]=2*T1[i]
+  
+}
+
+```
+
+The number of degrees of freedom of test statistic will be 1
+
+d)
+```{r}
+R=1000
+T2=array(0)
+for(i in 1:1000)
+{
+  x=rpareto(10,location=5,shape=1)
+  #COMPUTING LOG LIKELIHOOD FUNCTION
+  log.lik=function(y,w)
+  {
+    s=0
+    for(i in x){
+      s=s+log(dpareto(i,shape=y,location=w))
+    }
+    return(s)
+  } 
+  lo=log.lik(1,5)
+  
+  
+  
+  
+  f=function(params){
+  return(prod(dpareto(x,shape=params[1],location=params[2])))
+}
+  Ctrl= list(fnscale=-1)
+params=c(1,5)
+K=optim(fn=f,par=params,control=Ctrl,method="Nelder-Mead")
+
+  l1=log.lik(K$par[1],K$par[2])
+  T2[i]=2*(l1-lo)
+  
+  #t=qchisq(0.95,1)
+  #f[i]=ifelse(T>t,1,0)
+
+}
+
+
+#qchisq(0.05,1)
+#print(T)
+#hist(t,prob=TRUE,freq=F,main="histogram of T2")
+#curve(dchisq(x,df=1),add=T)
+#find proportion of times T is rejected.That is T>chisq(1),lambda
+#length(t[t>qchisq(0.95,1)])/R
+```
+e.)
+```{r}
+par(mfrow=c(1,2))
+hist(T1,prob=TRUE,freq=F,main="histogram of T1")
+curve(dchisq(x,df=9),add=T)
+
+hist(T2,prob=TRUE,freq=F,main="histogram of T2")
+curve(dchisq(x,df=1),add=T)
+
+```
+f)
+```{r}
+round(quantile(T1,c(0.025,0.975)),2)
+
+```
+paste("confidence interval for T1=[4.03,15.81]")
+```{r}
+round(quantile(T2,c(0.025,0.975)),2)
+
+```
+paste("confidence interval for T1=[0,8.91]")
+

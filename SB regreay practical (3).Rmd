@@ -1,0 +1,184 @@
+---
+title: "Linear Model Cw"
+author: "Kanchan Chowdhury"
+date: 13.04.2023
+output: pdf_document
+---
+
+```{r}
+setwd("C:/Users/DS-37/Downloads")
+d1=read.csv("data1.csv")
+d2=read.csv("data2.csv")
+d3=read.csv("data3.csv")
+```
+
+## Checking Linearity
+### Scatterplot
+```{r}
+plot(d1$X,d1$Y,pch=20)
+```
+As X and Y are linearly related, we move forward with Linear Regression.
+### Fitting Ordinary Learst Square  Model
+```{r}
+reg_ols1=lm(Y~X,d1)
+summary(reg_ols1)
+```
+### Checking normality of residuals
+We apply Shapiro Wilk Test and plot QQ-Plot
+```{r}
+shapiro.test(reg_ols1$residuals)
+qqnorm(reg_ols1$residuals,pch=20)
+qqline(reg_ols1$residuals)
+```
+As, p value = 0.1961 > 0.05. we accept the null hypothesis. Hence we move forward with t-test.
+### t-test for $E(\epsilon)=0$
+```{r}
+t.test(reg_ols1$residuals)
+```
+Here, the p-value is 1 > 0.05. We strongly accept the null and conclude that mean of the residuals is 0.
+
+### Checking Outliers
+```{r}
+boxplot(reg_ols1$residuals, data=d1)
+```
+
+
+### Checking Heteroskedasticity
+We plot Residual vs Fitted Plot
+```{r}
+plot(reg_ols1$fitted.values,reg_ols1$residuals,pch=20)
+```
+### BP Test for OLS model
+```{r,warning=FALSE}
+library(lmtest)
+bgtest(Y ~ X, order=3, data=d1)
+```
+Here, p-value = 0.002485 < 0.05. Hence, we reject the null hypothesis and conclude that the data is heteroskedastic.
+### NCV Test for OLS Model
+```{r}
+library(car)
+ncvTest(reg_ols1)
+```
+Here, p-value = 0.000018 < 0.05. Hence, we reject the null hypothesis and conclude that the data is heteroskedastic.
+
+
+Here, the plot is non-random, we move forward with **Weighted Linear Regression**
+Here we see that $|e| \propto x$  
+V(e) = $\propto x^2$  
+WLS -> $w_{ij} = \frac{1}{\sigma_i^2} \propto \frac{1}{x_i^2}$
+
+
+### Fitting Weighted Learst Square  Model
+```{r}
+reg_wls1=lm(Y~X,d1,weights = 1/X^2)
+summary(reg_wls1)
+```
+### Plotting Standard residuals vs Fitted Models
+```{r}
+par(mfrow=c(1,2))
+plot(reg_ols1$fitted.values,rstandard(reg_ols1),pch=20,main="OLS Model")
+plot(reg_wls1$fitted.values,rstandard(reg_wls1),pch=20,main="WLS Model")
+```
+### BP Test for WLS Model
+```{r}
+library(lmtest)
+bgtest(reg_wls1, order=3, data=d1)
+```
+Here, p-value = 0.002485 < 0.05. Hence, we reject the null hypothesis and conclude that the data is heteroskedastic.
+### NCV Test for WLS Model
+```{r}
+ncvTest(reg_wls1)
+```
+Here, p-value = 0.16617 > 0.05. Hence, we reject the accept hypothesis and conclude that the data is homoskedastic.
+
+## Problem 2
+```{r}
+reg2=lm(comsales~indsales,d2)
+summary(reg2)
+```
+```{r}
+plot(d2$time,reg2$residuals,pch=20)
+```
+
+```{r,warning=FALSE}
+library(orcutt)
+rho=cochrane.orcutt(reg2,convergence=5,max.iter=1000)$rho
+
+y=d2$comsales[-1]-d2$comsales[-20]*rho
+x=d2$indsales[-1]-d2$indsales[-20]*rho
+
+reg2=lm(y~x)
+```
+### Checking autocorrelation
+```{r}
+#plot(d2$time,reg2$residuals,pch=20)
+```
+### BG Test
+```{r}
+library(lmtest)
+bgtest(y ~ x, order=3, data=d2)
+```
+### DW Test
+```{r,message=FALSE}
+library(car)
+durbinWatsonTest(reg2)
+```
+## Problem 3
+```{r}
+head(d3)
+```
+```{r}
+d3[,1]
+```
+
+```{r}
+round(cor(d3[,-c(1:2)]),2)
+```
+- As Pulse is highly correlated to almost every variable then Pulse should be removed from the model.
+```{r}
+model=lm(BP~.,data=d3[,-1])
+vif(model)
+```
+- As variance inflation factor is high for weight,BSA and pulse so we should remove these variables from the model.
+
+###Problem 4
+Test if the location of sepal length and petal length are same or not.
+```{r}
+data=iris
+head(data)
+```
+```{r}
+library(tidyverse)
+setosa=data%>%filter(Species=="setosa")
+virginica=data%>%filter(Species=="virginica")
+```
+#testing for symmetry test.
+```{r}
+library(lawstat)
+symmetry.test(setosa$Sepal.Length-setosa$Petal.Length)
+```
+```{r}
+wilcox.test(setosa$Sepal.Length-setosa$Petal.Length,alternative = "two.sided",paired = F,mu=0)
+```
+- Diffrence in location exist.
+```{r}
+g1=ggplot(data=NULL)+
+  geom_histogram(aes(x=setosa$Sepal.Length,y=..density..),fill="lightgreen",color="red")+
+  geom_histogram(aes(x=setosa$Petal.Length,y=..density..),fill="skyblue",color="black")
+  
+
+```
+
+
+
+```{r}
+symmetry.test(virginica$Sepal.Length-virginica$Petal.Length)
+```
+
+
+
+
+
+
+
+
